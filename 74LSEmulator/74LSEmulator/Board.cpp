@@ -29,7 +29,12 @@ int main()
 	ic1.tick();
 	ic1.getPins();
 
+	SN74LS138 ic2(0b000, false, false, true);
+	ic2.tick();
+	ic2.getPins();
 
+	ic2.tick(0b110, false, false, true);
+	ic2.getPins();
 
 	std::cin.get();
 	return 0;

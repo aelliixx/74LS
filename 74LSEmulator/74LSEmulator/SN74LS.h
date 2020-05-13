@@ -15,11 +15,14 @@ namespace Alx
 	{
 		return a & mask;
 	}
-	uint8_t flipBits(uint8_t a, int bitCount)
+	uint8_t reverseBits(uint8_t a, int bitCount)
 	{
 		a = Alx::mask(a, 0b11111111 >> (8 - bitCount));
-		uint8_t t = ((a << bitCount) + a) >> 1;
-		a = Alx::mask(t, 0b11111111 >> (8 - bitCount));
+		a = (a & 0xF0) >> 4 | (a & 0x0F) << 4;
+		a = (a & 0xCC) >> 2 | (a & 0x33) << 2;
+		a = (a & 0xAA) >> 1 | (a & 0x55) << 1;
+		a = a >> (8 - bitCount);
+		a = Alx::mask(a, 0b11111111 >> (8 - bitCount));
 		return a;
 	}
 }
@@ -259,8 +262,8 @@ public:
 
 	void deMultiplex()
 	{
-		this->A = Alx::flipBits(this->A, 2);
-		this->B = Alx::flipBits(this->B, 2);
+		this->A = Alx::reverseBits(this->A, 2);
+		this->B = Alx::reverseBits(this->B, 2);
 
 		if (!Ea_)
 			this->Ya = ~(0b1000 >> this->A);
@@ -295,5 +298,46 @@ public:
 	void getPins()
 	{
 		std::cout << std::bitset<4>(static_cast<uint16_t>(Ya)) << " " << std::bitset<4>(static_cast<uint16_t>(Yb)) << std::endl;
+	}
+};
+
+class SN74LS138
+{
+private:
+	uint8_t A = 0b0;
+	bool E1_ = false;
+	bool E2_ = false;
+	bool E3 = false;
+public:
+	uint8_t Y = 0b0;
+	SN74LS138() : A(0b0), E1_(false), E2_(false), E3(false) {}
+	SN74LS138(uint8_t A, bool E1_, bool E2_, bool E3) : A(A), E1_(E1_), E2_(E2_), E3(E3) {}
+
+	void deMultiplex()
+	{
+		this->A = Alx::reverseBits(this->A, 3);
+
+		if (!E1_ & !E2_ && E3)
+			this->Y = ~(0b10000000 >> this->A);
+		else
+			this->Y = 0b11111111;
+	}
+	SN74LS138 tick()
+	{
+		deMultiplex();
+		return *this;
+	}
+	SN74LS138 tick(uint8_t A, bool E1_, bool E2_, bool E3)
+	{
+		this->A = A;
+		this->E1_ = E1_;
+		this->E2_ = E2_;
+		this->E3 = E3;
+		deMultiplex();
+		return *this;
+	}
+	void getPins()
+	{
+		std::cout << std::bitset<8>(static_cast<uint16_t>(Y)) << std::endl;
 	}
 };
